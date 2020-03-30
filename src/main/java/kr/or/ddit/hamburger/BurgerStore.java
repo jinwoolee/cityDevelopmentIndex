@@ -28,15 +28,18 @@ import com.google.gson.JsonParser;
 
 public class BurgerStore {
 	static Logger logger = LoggerFactory.getLogger(BurgerStore.class);
+	static final String KAKAO_REST_KEY = "608acba5cf1f813c93be3eba120d9124"; 
 	
 	
 	public static void main(String[] args) throws IOException {
 		BurgerStore burgerStore = new BurgerStore();
-		//burgerStore.getBurgerKing();		//버거킹
-		//burgerStore.getMacdolands();		//맥도날드
-		//burgerStore.getKfc();				//kfc
-		//burgerStore.getLotteria();			//롯데리아
-		burgerStore.getLotteria_byStoreNm();
+//		burgerStore.getBurgerKing();			//버거킹
+//		burgerStore.getMacdolands();			//맥도날드
+//		burgerStore.getKfc();					//kfc
+		burgerStore.getLotteria_byStoreNm();	//롯데리아
+		
+		
+		//burgerStore.getAddrInfo("대전광역시 서구 계룡로 630");
 		
 	}
 	
@@ -58,6 +61,83 @@ public class BurgerStore {
 		}
 	}*/
 	
+	
+	
+	/*
+	 * {"documents":[
+	{"address":
+		{"address_name":"대전 서구 용문동 589-12",
+		 "b_code":"3017010500",
+		 "h_code":"3017055000",
+		 "main_adderss_no":"",
+		 "main_address_no":"589",
+		 "mountain_yn":"N",
+		 "region_1depth_name":"대전",
+		 "region_2depth_name":"서구",
+		 "region_3depth_h_name":"용문동",
+		 "region_3depth_name":"용문동",
+		 "sub_adderss_no":"",
+		 "sub_address_no":"12",
+		 "x":"127.391923837398",
+		 "y":"36.3390091103489",
+		 "zip_code":""},
+	"address_name":"대전 서구 계룡로 630",
+	"address_type":"ROAD_ADDR",
+	"road_address":{
+		"address_name":"대전 서구 계룡로 630",
+		"building_name":"수정빌딩",
+		"main_building_no":"630",
+		"region_1depth_name":"대전",
+		"region_2depth_name":"서구",
+		"region_3depth_name":"용문동",
+		"road_name":"계룡로",
+		"sub_building_no":"",
+		"undergroun_yn":"",
+		"underground_yn":"N",
+		"x":"127.391923837398",
+		"y":"36.3390091103489",
+		"zone_no":"35300"},
+	"x":"127.391923837398",
+	"y":"36.3390091103489"}],
+	
+	"meta":
+		{"is_end":true,
+		 "pageable_count":1,
+		 "total_count":1}
+}
+	 */
+	private void getAddrInfo(String addr) {
+		if(addr == null || addr.equals(""))
+			return;
+		
+		try {
+			String jsonStr = Jsoup.connect("https://dapi.kakao.com/v2/local/search/address.json")
+					.header("Authorization", "KakaoAK " + KAKAO_REST_KEY)
+					.data("query", addr)
+					.ignoreContentType(true)
+					.execute().body();
+			
+			
+			JsonObject jsonObject = JsonParser.parseString(jsonStr).getAsJsonObject();
+			
+			//jsonObject.getAsJsonArray("documents").get(0).getAsJsonObject().getAsJsonObject("road_address").getAsJsonObject("building_name").getAsString()
+			
+			if(jsonObject.getAsJsonArray("documents").size() > 0) {
+				JsonObject addrJson = jsonObject.getAsJsonArray("documents").get(0).getAsJsonObject().getAsJsonObject("road_address");
+				logger.debug("{} : {} {} / {} {}", addr, addrJson.get("region_1depth_name").toString().replaceAll("\"", ""),
+											  addrJson.get("region_2depth_name").toString().replaceAll("\"", ""),
+											  addrJson.get("x").toString().replaceAll("\"", ""),
+											  addrJson.get("y").toString().replaceAll("\"", ""));
+			}
+			else {
+				logger.debug("{}", "no address info");
+			}
+		}catch(Exception e) {
+			e.printStackTrace();
+			logger.debug("{} ??", addr );
+		}
+	}
+	
 	//롯데리아 홈페이지에서는 매장 주소를 제공하지 않음
 	//단 단체주문 서비스, 모바일 페이지 매장 찾기에서 매장명으로 주소를 검색할 수는 있으나
 	//위 두 사이트는 퀵오더 혹은 단체 주문 서비스가 가능한 매장에 대해서만 검색이 가능
@@ -67,7 +147,7 @@ public class BurgerStore {
 		Document doc = Jsoup.connect("http://www.lotteria.com/Shop/Shop_Ajax.asp")
 					.ignoreContentType(true)
 					.data("Page", "1")
-					.data("PageSize", "5")
+					.data("PageSize", "3000")
 					.data("BlockSize", "10") 
 					.data("SearchArea1", "") 
 					.data("SearchArea2", "")
@@ -91,7 +171,7 @@ public class BurgerStore {
 			storeList.add(element.text());
 			
 			logger.debug("{} : {}", element.text(), getLotteriaAddr(element.text()));
-		}
+		}		
 	}
 	
 	private String getLotteriaAddr(String storeNm) throws IOException{
@@ -114,13 +194,15 @@ public class BurgerStore {
 		JsonArray jsonArray = JsonParser.parseString(body).getAsJsonArray();
 		
 		String addr = "";
-		if(jsonArray.size() > 0) {
+		if(jsonArray.size() == 1) {
 			
 			JsonElement jsonElement = jsonArray.get(0);
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
 			addr = jsonObject.get("si").toString().replace("\"", "") + " " + jsonObject.get("gu").toString().replace("\"", "") + " " +
 						  jsonObject.get("dong").toString().replace("\"", "") + " " + jsonObject.get("bunji").toString().replace("\"", "");
 			logger.debug("{}", addr);
+			
+			getAddrInfo(addr);
 		}	
 		return addr;
 	}
@@ -166,6 +248,10 @@ public class BurgerStore {
 			storeMap.put("addr_si", store.get("addr_si").toString().replace("\"", ""));
 			storeMap.put("addr_gu", store.get("addr_gu").toString().replace("\"", ""));
 			
+			if(! store.get("addr_road").toString().replace("\"", "").equals(""))
+				logger.debug("addr_road : {}", store.get("addr_road").toString().replace("\"", ""));
+				getAddrInfo(store.get("addr_road").toString());
+			
 			storeList.add(storeMap);
 		}
 		
@@ -188,11 +274,12 @@ public class BurgerStore {
 			//$(\".tdName .tit a\").text() + $(\".tdName .road\").text()
 			
 			Elements storeList = doc.select(".tdName");
-			Elements storeNames = doc.select(".tdName .tit");
-			Elements storeRoadAddr = doc.select(".tdName .road");
+//			Elements storeNames = doc.select(".tdName .tit");
+//			Elements storeRoadAddr = doc.select(".tdName .road");
 			
 			for(Element store : storeList) {
 				logger.debug("store : {}, roadAddr : {}", store.select(".tit").text(), store.select(".road").text());
+				getAddrInfo(store.select(".road").text());
 			}
 		}
 			
@@ -210,10 +297,10 @@ public class BurgerStore {
 		Gson gson = new GsonBuilder().create();
 		
 		JsonObject jsonObject = JsonParser.parseString(doc.body().text()).getAsJsonObject();
-		logger.debug("{}", jsonObject);
-		logger.debug("{}", jsonObject.get("body"));
-		logger.debug("{}", jsonObject.get("body").getAsJsonObject().get("storeList"));
-		logger.debug("{}", jsonObject.get("body").getAsJsonObject().get("storeList").getAsJsonArray());
+//		logger.debug("{}", jsonObject);
+//		logger.debug("{}", jsonObject.get("body"));
+//		logger.debug("{}", jsonObject.get("body").getAsJsonObject().get("storeList"));
+//		logger.debug("{}", jsonObject.get("body").getAsJsonObject().get("storeList").getAsJsonArray());
 		
 		JsonArray storeList = jsonObject.get("body").getAsJsonObject().get("storeList").getAsJsonArray();
 
@@ -223,11 +310,13 @@ public class BurgerStore {
 			JsonElement storeElement = iterator.next();
 			JsonObject store = storeElement.getAsJsonObject();
 			
-			logger.debug("{} : {}", index++, store.get("STOR_NM"));
-			logger.debug("{}", store.get("ADDR_1"));
-			logger.debug("{}", store.get("STOR_COORD_X"));
-			logger.debug("{}", store.get("STOR_COORD_Y"));
-			logger.debug("\n");
+//			logger.debug("{} : {} {} / {} {}", index++, 
+//												store.get("STOR_NM"),
+//												store.get("ADDR_1"),
+//												store.get("STOR_COORD_X"),
+//												store.get("STOR_COORD_Y"));
+			
+			getAddrInfo(store.get("ADDR_1").toString());
 		}
 	}
 }
