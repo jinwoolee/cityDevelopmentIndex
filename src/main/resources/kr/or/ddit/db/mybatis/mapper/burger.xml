@@ -3,7 +3,16 @@
   PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
   "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="burger">
-  <insert id="insertBurgerStore" parameterType="kr.or.ddit.hamburger.model.BurgerStoreVo">
-    INSERT INTO BURGERSTORE VALUES (#{sido}, #{sigungu}, #{storeCategory}, #{storeName}, #{posX}, #{posY} )
-  </insert>
+
+	<!-- 햄버거 점포 입력 -->
+  	<insert id="insertBurgerStore" parameterType="kr.or.ddit.hamburger.model.BurgerStoreVo">
+    	INSERT INTO burgerstore VALUES (#{sido}, #{sigungu}, #{storeCategory}, #{storeName}, #{posX}, #{posY} )
+  	</insert>
+  	
+  	<!-- 햄버거 점포 삭제 -->
+  	<delete id="deleteBurgerStore" parameterType="String">
+  		DELETE burgerstore
+  		WHERE storecategory = #{value}
+  	</delete>
+  
 </mapper>

@@ -1,12 +1,26 @@
 package kr.or.ddit.hamburger.model;
 
+import com.google.gson.annotations.Expose;
+import com.google.gson.annotations.SerializedName;
+
 public class BurgerStoreVo {
 
+	@SerializedName("region_1depth_name")	
 	private String sido;
+	
+	@SerializedName("region_2depth_name")
 	private String sigungu;
+	
+	@Expose(deserialize = true)
 	private String storeCategory;
+	
+	@Expose(deserialize = true)
 	private String storeName;
+	
+	@SerializedName("x")
 	private double posX;
+	
+	@SerializedName("y")
 	private double posY;
 	
 	public BurgerStoreVo() {

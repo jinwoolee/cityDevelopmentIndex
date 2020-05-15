@@ -15,6 +15,7 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -27,10 +28,10 @@ import kr.or.ddit.hamburger.model.BurgerStoreVo;
 
 
 public class BurgerStore {
-	private static final String BURGER_KING = "BURGER KING";	
-	private static final String LOTTERIA = "LOTTERIA";
-	private static final String MACDONALD = "MACDONALD";
-	private static final String KFC = "KFC";
+	public static final String BURGER_KING = "BURGER KING";	
+	public static final String LOTTERIA = "LOTTERIA";
+	public static final String MACDONALD = "MACDONALD";
+	public static final String KFC = "KFC";
 	
 	static Logger logger = LoggerFactory.getLogger(BurgerStore.class);
 	static final String KAKAO_REST_KEY = "608acba5cf1f813c93be3eba120d9124"; 
@@ -41,13 +42,13 @@ public class BurgerStore {
 	
 	public static void main(String[] args) throws IOException {
 		BurgerStore burgerStore = new BurgerStore();
-//		burgerStore.getBurgerKing();			//버거킹
+		burgerStore.getBurgerKing();			//버거킹
 //		burgerStore.getMacdolands();			//맥도날드
-//		burgerStore.getKfc();					//kfc
+//		burgerStore.getKfc();					//kfc burgerStore.getLotteria_byStoreNm(); - 대량
 		
-//		burgerStore.getLotteria_byStoreNm();	//롯데리아
+//		
 		
-		burgerStore.getLotteria();	//롯데리아
+//		burgerStore.getLotteria();	//롯데리아 burgerStore.getLotteria_byStoreNm(); - 
 	
 		//burgerStore.getAddrInfo("부산광역시 기장군 기장읍 280-1",  "test");
 	}
@@ -116,7 +117,6 @@ public class BurgerStore {
 					.ignoreContentType(true)
 					.execute().body();
 			
-			
 			JsonObject jsonObject = JsonParser.parseString(jsonStr).getAsJsonObject();
 			
 			if(jsonObject.getAsJsonArray("documents").size() > 0) {
@@ -130,12 +130,10 @@ public class BurgerStore {
 					addrJson = addrJson.getAsJsonObject("address");
 				}
 				
-				BurgerStoreVo burgerStoreVo = new BurgerStoreVo(addrJson.get("region_1depth_name").toString().replaceAll("\"", ""),
-															    addrJson.get("region_2depth_name").toString().replaceAll("\"", ""),
-															    storeCategory,
-															    storeNm,
-															    Double.parseDouble(addrJson.get("x").toString().replaceAll("\"", "")),
-															    Double.parseDouble(addrJson.get("y").toString().replaceAll("\"", "")));
+				Gson gson = new Gson();
+				BurgerStoreVo burgerStoreVo = gson.fromJson(addrJson.toString(), BurgerStoreVo.class);
+				burgerStoreVo.setStoreCategory(storeCategory);
+				burgerStoreVo.setStoreName(storeNm);
 				
 				logger.debug("{}", burgerStoreVo);
 				burgerDao.insertBurgerStore(burgerStoreVo);
@@ -157,10 +155,10 @@ public class BurgerStore {
 		//매장 리스트(주소X, 약 700여개)
 		//http://www.lotteria.com/Shop/Shop_Ajax.asp?PageSize=3000#
 		
-		//매장 검색(주소O)
+		//매장 검색 - 주소, 매장명(주소O)
 		//https://mobilehome.lotteria.com/store/search
 		
-		//단체 주문(약 970여개)
+		//단체 주문(약 970여개) - 상세 주소 부분이 중복되는 문제가 있다
 		//http://www.lotteriamall.com/party/group_party.asp
 		
 		//매장명 불러오기
@@ -320,7 +318,7 @@ public class BurgerStore {
 		}
 	}
 	
-	private void getBurgerKing() throws UnsupportedEncodingException, IOException {
+	public void getBurgerKing() throws UnsupportedEncodingException, IOException {
 		String param = "{\"header\":{\"error_code\":\"\",\"error_text\":\"\",\"info_text\":\"\",\"login_session_id\":\"\",\"message_version\":\"\",\"result\":true,\"trcode\":\"BKR0001\",\"ip_address\":\"\",\"platform\":\"02\",\"id_member\":\"\",\"auth_token\":\"\"},\"body\":{\"addrSi\":\"\",\"addrGu\":\"\",\"dirveTh\":\"\",\"dlvyn\":\"\",\"kmonYn\":\"\",\"kordYn\":\"\",\"oper24Yn\":\"\",\"parkingYn\":\"\",\"distance\":\"\",\"sortType\":\"\",\"storCoordX\":\"\",\"storCoordY\":\"\",\"storNm\":\"점\"}}";
 		
 		Document doc = Jsoup.connect("https://www.burgerking.co.kr/BKR0001.json?message="+URLEncoder.encode(param, "UTF-8"))
@@ -330,7 +328,7 @@ public class BurgerStore {
 		JsonObject jsonObject = JsonParser.parseString(doc.body().text()).getAsJsonObject();
 		
 		JsonArray storeList = jsonObject.get("body").getAsJsonObject().get("storeList").getAsJsonArray();
-
+		
 		Iterator<JsonElement> iterator = storeList.iterator();
 		
 		while(iterator.hasNext()) {
