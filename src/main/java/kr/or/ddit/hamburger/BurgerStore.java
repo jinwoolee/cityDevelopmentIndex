@@ -43,12 +43,9 @@ public class BurgerStore {
 	public static void main(String[] args) throws IOException {
 		BurgerStore burgerStore = new BurgerStore();
 		burgerStore.getBurgerKing();			//버거킹
-//		burgerStore.getMacdolands();			//맥도날드
-//		burgerStore.getKfc();					//kfc burgerStore.getLotteria_byStoreNm(); - 대량
-		
-//		
-		
-//		burgerStore.getLotteria();	//롯데리아 burgerStore.getLotteria_byStoreNm(); - 
+		burgerStore.getMacdolands();			//맥도날드
+		burgerStore.getKfc();					//kfc burgerStore.getLotteria_byStoreNm(); - 대량
+		burgerStore.getLotteria();	//롯데리아 burgerStore.getLotteria_byStoreNm(); - 
 	
 		//burgerStore.getAddrInfo("부산광역시 기장군 기장읍 280-1",  "test");
 	}
@@ -59,7 +56,7 @@ public class BurgerStore {
 		int lastPage = 150;
 		
 		for(int page = 1; page <= lastPage; page++) {
-			Document doc = Jsoup.connect("http://www.lotteriamall.com/party/group_party.asp")
+			Document doc = Jsoup.connect("https://www.lotteriamall.com/party/group_party.asp")
 							.data("page", Integer.toString(page))
 							.parser(Parser.htmlParser())
 							.get();
@@ -217,7 +214,7 @@ public class BurgerStore {
 		JsonArray jsonArray = JsonParser.parseString(body).getAsJsonArray();
 		
 		//점포검색시 비슷한 다른 점포가 검색될 가능성이 존재
-		if(jsonArray.size() >= 1) {
+		if(jsonArray != null && jsonArray.size() >= 1) {
 			
 			JsonElement jsonElement = jsonArray.get(0);
 			JsonObject jsonObject = jsonElement.getAsJsonObject();
